@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>To-Do List</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"  crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=Lato&display=swap" rel="stylesheet">
+    <script src="https://use.fontawesome.com/2f57198f21.js"></script>
+    <style>
+        html, body {
+            height: 100%;
+        }
+        body {
+            font-family: 'Lato', Arial;
+        }
+        .list-group-flush .list-group-item.low-pri {
+            border-left: 8px solid #17a2b8;
+            border-right: 8px solid transparent;
+        }
+        .list-group-flush .list-group-item.med-pri {
+            border-left: 8px solid #ffc107;
+            border-right: 8px solid transparent;
+        }
+        .list-group-flush .list-group-item.high-pri {
+            border-left: 8px solid #dc3545;
+            border-right: 8px solid transparent;
+        }
+        .list-group-flush .list-group-item.invisible-border {
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 100%;
+        }
+    </style>
+</head>
+<body class="bg-dark">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-6 col-md-8 col-sm-10 col-xs-12 mt-2 mb-2 mx-auto">
+                {% if alert %}
+                <div class="alert alert-{{ alert.level }} alert-dismissable fade show sticky-top mt-3" style="z-index: 10000;" role="alert">
+                    {{ alert.message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                {% endif %}
+                <div class="card text-white" style="background-color: #000;">
+                    <div class="card-header sticky-top" style="background-color: #000;">
+                        <div class="d-flex w-100">
+                            <span class="mb-1 h4"><i class="fa fa-fw fa-list"></i>&nbsp;To-Do List</span>
+                            <form action="/clear" method="POST" class="form-inline ml-auto mr-2">
+                                <button type="submit" id="clear-btn" class="btn btn-sm btn-danger"><i class="fa fa-fw fa-eraser"></i>Clear</button>
+                            </form>
+                            <form action="/save" method="POST" class="form-inline mr-0">
+                                <button type="submit" id="save-btn" class="btn btn-sm btn-primary"><i class="fa fa-fw fa-floppy-o"></i>Save</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="list-group list-group-flush text-dark">
+                    {% if todo_list %}
+                        {% for todo in todo_list %}
+                        <div class="list-group-item{{ " low-pri" if todo.priority == "Low" else " med-pri" if todo.priority == "Medium" else " high-pri" }}" id="todo-{{ todo.id }}">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1">{{ todo.task }}</h5>
+                                <a href="/delete/{{ todo.id }}" class="delete-todo"><i class="fa fa-fw fa-trash text-danger"></i></a>
+                            </div>
+                            <div class="d-flex w-100 justify-content-between">
+                                <a href="mailto:{{ todo.email }}?subject={{ todo.task }}" class="text-muted small">{{ todo.email }}</a>
+                                <small class="{{ "text-info" if todo.priority == "Low" else "text-warning" if todo.priority == "Medium" else "text-danger" }}">{{ todo.priority }} Priority</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="list-group-item invisible-border">
+                            <h4>No to-dos, add one below!</h4>
+                        </div>
+                    {% endif %}
+                        <div class="list-group-item invisible-border" id="add-todo">
+                            <h5>Add To-Do</h5>
+                            <form action="/submit" method="POST">
+                                <div class="form-group">
+                                    <input type="text" class="form-control{{ " is-invalid" if errors and errors.messages.task }}" name="task" placeholder="Task" required value="{{ errors.input.task if errors }}" />
+                                    {{ ("<small class=\"text-danger\">"+errors.messages.task+"</small>")|safe if errors and errors.messages.task }}
+                                </div>
+                                <div class="form-group">
+                                    <input type="text" class="form-control{{ " is-invalid" if errors and errors.messages.email }}" name="email" placeholder="Email address" required value="{{ errors.input.email if errors }}" />
+                                    {{ ("<small class=\"text-danger\">"+errors.messages.email+"</small>")|safe if errors and errors.messages.email }}
+                                </div>
+                                <div class="form-group">
+                                    <select class="form-control{{ " is-invalid" if errors and errors.messages.priority }}" name="priority" required value="{{ errors.input.priority if errors }}" />
+                                        <option{{ " selected" if not errors }} value="">Priority (Select one)</option>
+                                        <option{{ " selected" if errors and errors.input.priority == "Low" }} value="Low">Low</option>
+                                        <option{{ " selected" if errors and errors.input.priority == "Medium" }} value="Medium">Medium</option>
+                                        <option{{ " selected" if errors and errors.input.priority == "High" }} value="High">High</option>
+                                    </select>
+                                    {{ ("<small class=\"text-danger\">"+errors.messages.priority+"</small>")|safe if errors and errors.messages.priority }}
+                                </div>
+                                <button class="btn btn-sm btn-success float-right" type="submit" name="submit"><i class="fa fa-fw fa-plus-circle"></i>Add To-Do Item</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"  crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootbox.js/5.3.2/bootbox.min.js" crossorigin="anonymous"></script>
+    <script>
+        if ($(".alert.alert-dismissable").length > 0){
+            setTimeout(function(){
+                $(".alert.alert-dismissable").alert("close");
+            }, 5000);
+        }
+
+        $("#clear-btn").on("click", function(e){
+            e.preventDefault();
+            bootbox.confirm({
+                message: "Clear the to-do list? Remember to save changes after clearing!",
+                buttons: {
+                    confirm: {
+                        label: 'Yes',
+                        className: 'btn-danger'
+                    },
+                    cancel: {
+                        label: 'Cancel',
+                        className: 'btn-secondary'
+                    }
+                },
+                callback: function(result){
+                    if (result){
+                        $("#clear-btn").parent().submit();
+                    }
+                }
+            });
+        });
+        $("#save-btn").on("click", function(e){
+            e.preventDefault();
+            bootbox.confirm({
+                message: "Save the to-do list?",
+                buttons: {
+                    confirm: {
+                        label: 'Yes',
+                        className: 'btn-primary'
+                    },
+                    cancel: {
+                        label: 'Cancel',
+                        className: 'btn-secondary'
+                    }
+                },
+                callback: function(result){
+                    if (result){
+                        $("#save-btn").parent().submit();
+                    }
+                }   
+            });
+        });
+
+        $(".delete-todo").on("click", function(e){
+            e.preventDefault();
+            url = $(this).attr("href")
+            bootbox.confirm({
+                message: "Delete this to-do item? Remember to save the changes!",
+                buttons: {
+                    confirm: {
+                        label: 'Yes',
+                        className: 'btn-danger'
+                    },
+                    cancel: {
+                        label: 'Cancel',
+                        className: 'btn-secondary'
+                    }
+                },
+                callback: function(result){
+                    if (result){
+                        window.location.href = url;
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
